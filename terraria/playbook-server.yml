@@ -6,6 +6,7 @@
     terraria_user: "terraria"
     server_dir: "/home/{{ terraria_user }}/server"
     config_dir: "/home/{{ terraria_user }}/.local/share/Terraria/tModLoader"
+    tmodloader_version: "v2026.01.3.3"
 
   tasks:
     - name: Install packages
@@ -38,7 +39,7 @@
 
     - name: Get server binaries
       ansible.builtin.get_url:
-        url: https://github.com/tModLoader/tModLoader/releases/download/v2026.01.3.3/tModLoader.zip
+        url: "https://github.com/tModLoader/tModLoader/releases/download/{{ tmodloader_version }}/tModLoader.zip"
         dest: "{{ server_dir }}/tModLoader.zip"
         owner: "{{ terraria_user }}"
         group: "{{ terraria_user }}"
