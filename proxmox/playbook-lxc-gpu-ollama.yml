@@ -1,0 +1,57 @@
+---
+- name: Deploy LXC container with GPU passthrough and Ollama
+  hosts: lxc-gpu
+  become: yes
+  vars:
+    ansible_user: root
+
+  tasks:
+    - name: Install packages
+      ansible.builtin.apt:
+        name: 
+          - curl
+          - zstd
+          - vulkan-tools
+          - libvulkan1
+          - mesa-vulkan-drivers
+        state: present
+        update_cache: yes
+
+    - name: Check if Ollama is installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/ollama
+      register: ollama_bin
+
+    - name: Ollama installation
+      ansible.builtin.shell:
+        cmd: "curl -fsSL https://ollama.com/install.sh | sh"
+      when: not ollama_bin.stat.exists
+
+    - name: Create override folder for Ollama Service
+      ansible.builtin.file:
+        path: /etc/systemd/system/ollama.service.d
+        state: directory
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: Add Environment vars to Ollama
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/ollama.service.d/override.conf
+        content: |
+          [Service]
+          Environment="OLLAMA_VULKAN=1"
+          Environment="OLLAMA_HOST=0.0.0.0"
+          Environment="LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu"
+        owner: root
+        group: root
+        mode: 0644
+      notify: Restart Ollama Service
+
+  handlers:
+    - name: Restart Ollama Service
+      ansible.builtin.systemd:
+        name: ollama
+        state: restarted
+        daemon_reload: yes
+        enabled: yes
